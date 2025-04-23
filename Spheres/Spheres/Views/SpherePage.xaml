@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="Spheres.Views.SpherePage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Spheres.Views"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:controls="using:CommunityToolkit.WinUI.Controls"
+    xmlns:ui="using:CommunityToolkit.WinUI"
+    xmlns:models="using:Spheres.Models"  
+    xmlns:viewmodels="using:Spheres.ViewModels"  
+    xmlns:converters="using:CommunityToolkit.WinUI.Converters"
+    d:DataContext="{d:DesignInstance Type=viewmodels:SphereViewModel}"  
+    mc:Ignorable="d">
+
+    <StackPanel Orientation="Vertical" Spacing="10" Padding="20" VerticalAlignment="Top">
+        <TextBlock Style="{StaticResource TitleTextBlockStyle}" Text="{Binding Sphere.Name}" />
+        <controls:SettingsCard
+           Header="Launch at startup"
+           HeaderIcon="{ui:FontIcon Glyph=&#xE819;}"
+           IsEnabled="False">
+            <StackPanel Spacing="40" Orientation="Horizontal">
+                <ToggleSwitch />
+            </StackPanel>
+        </controls:SettingsCard>
+        <controls:SettingsCard
+           Header="Launch interval"
+           HeaderIcon="{ui:FontIcon Glyph=&#xE916;}"
+           IsEnabled="False">
+           <StackPanel Spacing="40" Orientation="Horizontal">
+                <ComboBox IsEditable="True" />
+                <ToggleSwitch />
+            </StackPanel>
+        </controls:SettingsCard>
+        <controls:SettingsCard
+           Header="Hotkey"
+           HeaderIcon="{ui:FontIcon Glyph=&#xE961;}"
+           IsEnabled="False">
+            <StackPanel Spacing="40" Orientation="Horizontal">
+                <ComboBox IsEditable="True" />
+                <ToggleSwitch />
+            </StackPanel>
+        </controls:SettingsCard>
+        <controls:SettingsCard
+           Header="Monitor facets"
+           HeaderIcon="{ui:FontIcon Glyph=&#xE7FA;}"
+           IsEnabled="False">
+            <StackPanel Spacing="40" Orientation="Horizontal">
+                <CheckBox />
+                <ToggleSwitch />
+            </StackPanel>
+        </controls:SettingsCard>
+    </StackPanel>
+</Page>

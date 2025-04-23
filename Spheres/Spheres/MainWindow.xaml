@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window
+    x:Class="Spheres.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Spheres"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Title="Spheres">
+
+    <Window.SystemBackdrop>
+        <MicaBackdrop/>
+    </Window.SystemBackdrop>
+
+    <NavigationView x:Name="NavView"
+        IsSettingsVisible="False"
+        IsBackButtonVisible="Collapsed"
+        IsBackEnabled="False"
+        AlwaysShowHeader="False"
+        PaneTitle="Spheres"
+        PaneDisplayMode="Left"
+        ExpandedModeThresholdWidth="500"
+        IsTabStop="False">
+        <NavigationView.MenuItems>
+            <NavigationViewItem Content="Dashboard" Tag="Spheres.Views.HomePage" x:Name="HomePage">
+                <NavigationViewItem.Icon>
+                    <FontIcon Glyph="&#xF246;" />
+                </NavigationViewItem.Icon>
+            </NavigationViewItem>
+            <NavigationViewItemHeader Content="Spheres" Visibility="Visible" />
+        </NavigationView.MenuItems>
+
+        <NavigationView.FooterMenuItems>
+            <NavigationViewItem Content="Add" Tag="Spheres.Views.AddPage" x:Name="AddPage">
+                <NavigationViewItem.Icon>
+                    <FontIcon Glyph="&#xECC8;" />
+                </NavigationViewItem.Icon>
+            </NavigationViewItem>
+            <NavigationViewItem Content="Settings" Tag="Spheres.Views.SettingsPage" x:Name="SettingsPage">
+                <NavigationViewItem.Icon>
+                    <FontIcon Glyph="&#xE713;" />
+                </NavigationViewItem.Icon>
+            </NavigationViewItem>
+        </NavigationView.FooterMenuItems>
+
+        <Frame x:Name="NavFrame" />
+    </NavigationView>
+</Window>

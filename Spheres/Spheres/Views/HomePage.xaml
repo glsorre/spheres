@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="Spheres.Views.HomePage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Spheres.Views"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:controls="using:CommunityToolkit.WinUI.Controls"
+    xmlns:ui="using:CommunityToolkit.WinUI"
+    xmlns:models="using:Spheres.Models"  
+    xmlns:viewmodels="using:Spheres.ViewModels"  
+    xmlns:converters="using:CommunityToolkit.WinUI.Converters"
+    d:DataContext="{d:DesignInstance Type=viewmodels:HomeViewModel}" 
+    mc:Ignorable="d">
+
+    <Page.Resources>
+        <converters:BoolNegationConverter x:Key="BoolNegationConverter" />
+        <DataTemplate x:Key="SphereTemplate" x:DataType="models:Sphere">
+            <controls:SettingsCard Description="{Binding Description}"
+                       Header="{Binding Name}"
+                       IsEnabled="True">
+                <controls:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="{Binding Icon}" />
+                </controls:SettingsCard.HeaderIcon>
+                <StackPanel Spacing="40" Orientation="Horizontal">
+                    <ToggleSwitch x:Name="LaunchToogle" Toggled="LaunchToogle_Toggled" />
+                    <Button
+                        x:Name="EditButton">
+                        <FontIcon Glyph="&#xE70F;" />
+                    </Button>
+                </StackPanel>
+            </controls:SettingsCard>
+        </DataTemplate>
+        <StackLayout x:Name="VerticalStackLayout" Orientation="Vertical" Spacing="10"/>
+    </Page.Resources>
+
+    <Grid>
+        <ProgressRing Visibility="{Binding isLoading}" />
+
+        <Grid Padding="20" VerticalAlignment="Top" Visibility="{Binding isLoading, Converter={StaticResource BoolNegationConverter}}">
+            <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                  HorizontalScrollMode="Auto"
+                  IsVerticalScrollChainingEnabled="False">
+                <ItemsRepeater
+                   ItemsSource="{Binding Spheres}"
+                   Layout="{StaticResource VerticalStackLayout}"
+                   ItemTemplate="{StaticResource SphereTemplate}" />
+            </ScrollViewer>
+        </Grid>
+    </Grid>
+</Page>

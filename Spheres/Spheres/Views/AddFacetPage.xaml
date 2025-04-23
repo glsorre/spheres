@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="Spheres.Views.AddFacetPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Spheres.Views"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="using:Spheres.Models"  
+    xmlns:viewmodels="using:Spheres.ViewModels"  
+    xmlns:converters="using:CommunityToolkit.WinUI.Converters"
+    d:DataContext="{d:DesignInstance Type=viewmodels:AddFacetViewModel}"
+    mc:Ignorable="d">
+
+    <Page.Resources>
+        <converters:BoolNegationConverter x:Key="BoolNegationConverter" />
+    </Page.Resources>
+
+
+    <Grid>
+        <StackPanel VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Spacing="20" MinWidth="350">
+            <ComboBox PlaceholderText="Type" ItemsSource="{Binding FacetTypeValues}" SelectedItem="{Binding type, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MinWidth="100" />
+            <Grid ColumnSpacing="10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                
+                <TextBox PlaceholderText="Content" Text="{Binding content, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Grid.Column="0" />
+                <Button Content="Choose" x:Name="ChooseButton" Click="ChooseButton_Click" Visibility="{Binding IsUrl, Converter={StaticResource BoolNegationConverter}}" Grid.Column="1" />
+            </Grid>
+        </StackPanel>
+    </Grid>
+</Page>
