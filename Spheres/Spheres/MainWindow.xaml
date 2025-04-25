@@ -6,6 +6,7 @@
     xmlns:local="using:Spheres"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:tb="using:H.NotifyIcon"
     mc:Ignorable="d"
     Title="Spheres">
 
@@ -14,14 +15,14 @@
     </Window.SystemBackdrop>
 
     <NavigationView x:Name="NavView"
-        IsSettingsVisible="False"
-        IsBackButtonVisible="Collapsed"
-        IsBackEnabled="False"
-        AlwaysShowHeader="False"
-        PaneTitle="Spheres"
-        PaneDisplayMode="Left"
-        ExpandedModeThresholdWidth="500"
-        IsTabStop="False">
+            IsSettingsVisible="False"
+            IsBackButtonVisible="Collapsed"
+            IsBackEnabled="False"
+            AlwaysShowHeader="False"
+            PaneTitle="Spheres"
+            PaneDisplayMode="Left"
+            ExpandedModeThresholdWidth="500"
+            IsTabStop="False">
         <NavigationView.MenuItems>
             <NavigationViewItem Content="Dashboard" Tag="Spheres.Views.HomePage" x:Name="HomePage">
                 <NavigationViewItem.Icon>

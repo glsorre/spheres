@@ -64,6 +64,7 @@ namespace Spheres
                     Sphere? fileSphere = JsonSerializer.Deserialize<Sphere>(stream);
                     SavedSpheres.Add(fileSphere.Name, fileSphere);
                     AddNavViewItem(fileSphere.Name, fileSphere.Icon, typeof(SpherePage));
+                    ((App)App.Current).AddTrayItem(fileSphere.Name);
                 }
             }
         }

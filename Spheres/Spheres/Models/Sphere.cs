@@ -8,7 +8,9 @@ using System.Management;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Data;
 using Vanara.PInvoke;
 using Windows.ApplicationModel;
 using Windows.ApplicationModel.Core;
@@ -19,7 +21,28 @@ using Windows.System.Diagnostics;
 
 namespace Spheres.Models
 {
-    public class Sphere : IEquatable<Sphere?>
+    public class BooleanToIconElementConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, string language)
+        {
+            if (value is bool isRunning)
+            {
+                return isRunning ? Symbol.Play : Symbol.Stop;
+            }
+            return null;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, string language)
+        {
+            if (value is Symbol symbol)
+            {
+                return symbol == Symbol.Play;
+            }
+            return false;
+        }
+    }
+
+    public partial class Sphere : ObservableObject, IEquatable<Sphere?>
     {
         public Sphere()
         {
@@ -49,7 +72,12 @@ namespace Spheres.Models
         public List<JsonFacet> Facets { get; set; }
 
         [JsonIgnore]
-        public List<ValueTuple<int, string, string>> Processes = new();
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(IsRunning))]
+        public List<ValueTuple<int, string, string>> processes = new();
+
+        [JsonIgnore]
+        public bool IsRunning => Processes.Count > 0;
 
         public override bool Equals(object? obj)
         {
@@ -77,6 +105,20 @@ namespace Spheres.Models
         public static bool operator !=(Sphere? left, Sphere? right)
         {
             return !(left == right);
+        }
+
+        public async Task<bool> Toggle()
+        {
+            if (IsRunning)
+            {
+                await Stop();
+                return false;
+            }
+            else
+            {
+                await Start();
+                return true;
+            }
         }
 
         public async Task Start()
@@ -116,7 +158,8 @@ namespace Spheres.Models
                             }
                         }
                     }
-                } else
+                }
+                else
                 {
                     notClosedPids.Add($"{pid.ToString()}*\"{executable}\"");
                 }
@@ -128,6 +171,9 @@ namespace Spheres.Models
                 Debug.WriteLine($"Processes to close: {arguments}");
                 Stop_WithSpheresExit(arguments);
             }
+
+            Processes.Clear();
+            OnPropertyChanged(nameof(IsRunning));
         }
 
         public static void Stop_WithSpheresExit(string arguments)
