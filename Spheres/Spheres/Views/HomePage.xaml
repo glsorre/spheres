@@ -16,6 +16,12 @@
 
     <Page.Resources>
         <converters:BoolNegationConverter x:Key="BoolNegationConverter" />
+        <DataTemplate x:Key="LaunchButtonTemplate">
+            <StackPanel Orientation="Horizontal">
+                <FontIcon Glyph="&#xE768;" Visibility="{Binding IsRunning, Converter={StaticResource BoolNegationConverter}}" />
+                <FontIcon Glyph="&#xE71A;" Visibility="{Binding IsRunning}" />
+            </StackPanel>
+        </DataTemplate>
         <DataTemplate x:Key="SphereTemplate" x:DataType="models:Sphere">
             <controls:SettingsCard Description="{Binding Description}"
                        Header="{Binding Name}"
@@ -23,10 +29,16 @@
                 <controls:SettingsCard.HeaderIcon>
                     <FontIcon Glyph="{Binding Icon}" />
                 </controls:SettingsCard.HeaderIcon>
-                <StackPanel Spacing="40" Orientation="Horizontal">
-                    <ToggleSwitch x:Name="LaunchToogle" Toggled="LaunchToogle_Toggled" />
+                <StackPanel Spacing="10" Orientation="Horizontal">
+                    <ToggleButton
+                        x:Name="LaunchButton"
+                        IsChecked="{Binding IsRunning}"
+                        ContentTemplate="{StaticResource LaunchButtonTemplate}"
+                        Click="LaunchButton_Toggled"
+                        />
                     <Button
-                        x:Name="EditButton">
+                        x:Name="EditButton"
+                        Click="EditButton_Click">
                         <FontIcon Glyph="&#xE70F;" />
                     </Button>
                 </StackPanel>
@@ -36,9 +48,9 @@
     </Page.Resources>
 
     <Grid>
-        <ProgressRing Visibility="{Binding isLoading}" />
+        <ProgressRing Visibility="{Binding IsLoading}" />
 
-        <Grid Padding="20" VerticalAlignment="Top" Visibility="{Binding isLoading, Converter={StaticResource BoolNegationConverter}}">
+        <Grid Padding="20" VerticalAlignment="Top" Visibility="{Binding IsLoading, Converter={StaticResource BoolNegationConverter}}">
             <ScrollViewer HorizontalScrollBarVisibility="Auto"
                   HorizontalScrollMode="Auto"
                   IsVerticalScrollChainingEnabled="False">

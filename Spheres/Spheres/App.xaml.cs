@@ -1,23 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using H.NotifyIcon.Core;
+using FlaUI.Core.WindowsAPI;
 using H.NotifyIcon;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Navigation;
-using Microsoft.UI.Xaml.Shapes;
-using Windows.ApplicationModel;
-using Windows.ApplicationModel.Activation;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
-using Windows.Storage;
 using Spheres.Models;
 
 // To learn more about WinUI, the WinUI project structure,
@@ -47,7 +35,6 @@ namespace Spheres
         protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
         {
             m_window = new MainWindow();
-            //m_window.Activate();
 
             TrayInit();
         }
@@ -69,42 +56,18 @@ namespace Spheres
 
         private void LaunchCloseSphereCommand_ExecuteRequested(XamlUICommand sender, ExecuteRequestedEventArgs args)
         {
-            m_window.DispatcherQueue.TryEnqueue(() =>
+            m_window.DispatcherQueue.TryEnqueue(async () =>
             {
                 var sphereName = args.Parameter.ToString();
                 if (sphereName != null)
                 {
-                    if (m_window.SavedSpheres.ContainsKey(sphereName))
+                    var sphere = m_window.AppViewModel.Spheres.FirstOrDefault(s => s.Name == sphereName);
+                    if (sphere != null)
                     {
-                        m_window.SavedSpheres[sphereName].Toggle();
+                        await sphere.Toggle();
                     }
                 }
             });
-        }
-
-        public void AddTrayItem(string sphereName)
-        {
-            if (TrayIcon.ContextFlyout is MenuFlyout menuFlyout)
-            {
-                var checkedBinding = new Binding()
-                {
-                    Path = new PropertyPath("SavedSpheres[" + sphereName + "].IsRunning"),
-                    Source = m_window,
-                    Mode = BindingMode.OneWay,
-                    UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged,
-                };
-
-                var trayItem = new ToggleMenuFlyoutItem()
-                {
-                    Text = sphereName,
-                    Command = (XamlUICommand)Resources["LaunchCloseSphereCommand"],
-                    CommandParameter = sphereName,
-                };
-
-                trayItem.SetBinding(ToggleMenuFlyoutItem.IsCheckedProperty, checkedBinding);
-
-                menuFlyout.Items.Insert(0, trayItem);
-            }
         }
 
         private void ShowHideWindowCommand_ExecuteRequested(object? _, ExecuteRequestedEventArgs args)
@@ -116,6 +79,8 @@ namespace Spheres
             else
             {
                 m_window.Show();
+                var Handle = m_window.GetWindowHandle();
+                User32.SetForegroundWindow(Handle);
             }
         }
 

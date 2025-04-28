@@ -1,45 +1,183 @@
-﻿using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Diagnostics;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
-using System.Windows.Forms;
-using CommunityToolkit.WinUI.Collections;
-using CommunityToolkit.Mvvm.ComponentModel;
-using FlaUI.Core.AutomationElements;
-using FlaUI.Core.Conditions;
-using FlaUI.Core.Definitions;
-using FlaUI.Core.WindowsAPI;
-using FlaUI.UIA3;
-using FlaUI.UIA3.Converters;
-using FlaUI.UIA3.Patterns;
-using FuzzySharp;
-using Spheres.Models;
-using Vanara.Extensions.Reflection;
-using Vanara.PInvoke;
-using Windows.Devices.I2c;
-using Windows.System;
-using static Vanara.PInvoke.ComCtl32;
-using Process = System.Diagnostics.Process;
-using User32 = Vanara.PInvoke.User32;
 using System.Threading.Tasks;
-using System;
-using CommunityToolkit.Mvvm.Input;
-using System.Security.Principal;
-using static Vanara.PInvoke.Kernel32.PSS_HANDLE_ENTRY;
-using CommunityToolkit.Common;
+using System.Transactions;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.WinUI.Collections;
+using Microsoft.UI.Xaml.Data;
+using Spheres.Models;
+using Windows.System;
 
 
 namespace Spheres.ViewModels;
 
-public partial class SphereViewModel : ObservableObject
+public class ModifiersToStringConverter : IValueConverter
 {
-    [ObservableProperty]
-    public partial Sphere Sphere { get; set; }
-
-
-    public SphereViewModel(Sphere s)
+    public object Convert(object value, Type targetType, object parameter, string language)
     {
-        Sphere = s;
+        if (value is VirtualKeyModifiers modifiers)
+        {
+            return string.Join(" + ", Enum.GetValues(typeof(VirtualKeyModifiers))
+                .Cast<VirtualKeyModifiers>()
+                .Where(m => m != VirtualKeyModifiers.None && (modifiers & m) == m)
+                .Select(m => m.ToString() ?? "None"));
+        }
+        return string.Empty;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, string language)
+    {
+        if (value is string str)
+        {
+            var parts = str.Split(new[] { " + " }, StringSplitOptions.RemoveEmptyEntries);
+            VirtualKeyModifiers modifiers = VirtualKeyModifiers.None;
+            foreach (var part in parts)
+            {
+                if (Enum.TryParse(part, out VirtualKeyModifiers modifier))
+                {
+                    modifiers |= modifier;
+                }
+            }
+            return modifiers;
+        }
+        return VirtualKeyModifiers.None;
+    }
+}
+
+public class KeyToStringConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, string language)
+    {
+        if (value is VirtualKey key)
+        {
+            return key.ToString();
+        }
+        return string.Empty;
+    }
+    public object ConvertBack(object value, Type targetType, object parameter, string language)
+    {
+        if (value is string str)
+        {
+            if (Enum.TryParse(str, out VirtualKey key))
+            {
+                return key;
+            }
+        }
+        return VirtualKey.None;
+    }
+}
+
+public partial class SphereViewModel : AppViewModel
+{
+    public IReadOnlyList<VirtualKeyModifiers> Modifiers { get; } = new List<VirtualKeyModifiers>
+    {
+        VirtualKeyModifiers.None,
+        VirtualKeyModifiers.Control | VirtualKeyModifiers.Windows,
+        VirtualKeyModifiers.Menu | VirtualKeyModifiers.Windows,
+        VirtualKeyModifiers.Shift | VirtualKeyModifiers.Windows,
+        VirtualKeyModifiers.Control | VirtualKeyModifiers.Windows | VirtualKeyModifiers.Menu,
+        VirtualKeyModifiers.Control | VirtualKeyModifiers.Windows | VirtualKeyModifiers.Shift,
+    };
+
+    public IReadOnlyList<VirtualKey> FunctionKeys { get; } = new List<VirtualKey>
+    {
+        VirtualKey.F1,
+        VirtualKey.F2,
+        VirtualKey.F3,
+        VirtualKey.F4,
+        VirtualKey.F5,
+        VirtualKey.F6,
+        VirtualKey.F7,
+        VirtualKey.F8,
+        VirtualKey.F9,
+        VirtualKey.F10,
+        VirtualKey.F11
+    };
+
+    public IReadOnlyList<VirtualKey> AllKeys { get; } = new List<VirtualKey>
+    {
+        VirtualKey.A,
+        VirtualKey.B,
+        VirtualKey.C,
+        VirtualKey.D,
+        VirtualKey.E,
+        VirtualKey.F,
+        VirtualKey.G,
+        VirtualKey.H,
+        VirtualKey.I,
+        VirtualKey.J,
+        VirtualKey.K,
+        VirtualKey.L,
+        VirtualKey.M,
+        VirtualKey.N,
+        VirtualKey.O,
+        VirtualKey.P,
+        VirtualKey.Q,
+        VirtualKey.R,
+        VirtualKey.S,
+        VirtualKey.T,
+        VirtualKey.U,
+        VirtualKey.V,
+        VirtualKey.W,
+        VirtualKey.X,
+        VirtualKey.Y,
+        VirtualKey.Z,
+        VirtualKey.Number0,
+        VirtualKey.Number1,
+        VirtualKey.Number2,
+        VirtualKey.Number3,
+        VirtualKey.Number4,
+        VirtualKey.Number5,
+        VirtualKey.Number6,
+        VirtualKey.Number7,
+        VirtualKey.Number8,
+        VirtualKey.Number9,
+        VirtualKey.F1,
+        VirtualKey.F2,
+        VirtualKey.F3,
+        VirtualKey.F4,
+        VirtualKey.F5,
+        VirtualKey.F6,
+        VirtualKey.F7,
+        VirtualKey.F8,
+        VirtualKey.F9,
+        VirtualKey.F10,
+        VirtualKey.F11
+    };
+
+    public IReadOnlyList<VirtualKey> Keys => SelectedSphere.Modifiers == VirtualKeyModifiers.None
+        ? FunctionKeys
+        : AllKeys;
+
+    public SphereViewModel(AppViewModel appViewModel)
+        : base(appViewModel.IsLoading, appViewModel.Spheres, appViewModel.SelectedSphere)
+    {
+    }
+
+    public async void AddFacet(JsonFacet facet)
+    {
+        await SelectedSphere.AddFacet(facet);
+    }
+
+    public void RemoveFacet(JsonFacet facet)
+    {
+        SelectedSphere.RemoveFacet(facet);
+    }
+
+    public async Task Save()
+    {
+        await SelectedSphere.Save();
+    }
+
+    public void SelectModifier(VirtualKeyModifiers modifier)
+    {
+        SelectedSphere.SetModifiers(modifier);
+        OnPropertyChanged(nameof(Keys));
+    }
+
+    public void SelectKey(VirtualKey key)
+    {
+        SelectedSphere.SetKey(key);
     }
 }

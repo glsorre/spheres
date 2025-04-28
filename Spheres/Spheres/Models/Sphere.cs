@@ -1,26 +1,98 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Management;
-using System.Text;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Data;
+using Spheres.ViewModels;
 using Vanara.PInvoke;
-using Windows.ApplicationModel;
-using Windows.ApplicationModel.Core;
-using Windows.Foundation;
-using Windows.Management.Deployment;
+using Windows.Storage;
 using Windows.System;
-using Windows.System.Diagnostics;
+using WinRT.Interop;
+
 
 namespace Spheres.Models
 {
+    public class SphereJsonConverter : JsonConverter<Sphere>
+    {
+        public override Sphere Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            string name = "";
+            string? description = null;
+            string icon = "";
+            List<JsonFacet> facets = new();
+            bool launchatboot = false;
+            int launchinterval = 0;
+            VirtualKey key = VirtualKey.None;
+            VirtualKeyModifiers modifiers = VirtualKeyModifiers.None;
+
+            while (reader.Read())
+            {
+                if (reader.TokenType == JsonTokenType.EndObject)
+                {
+                    break;
+                }
+                if (reader.TokenType != JsonTokenType.PropertyName)
+                {
+                    continue;
+                }
+                string propertyName = reader.GetString();
+                reader.Read();
+                switch (propertyName)
+                {
+                    case "name":
+                        name = reader.GetString();
+                        break;
+                    case "description":
+                        description = reader.GetString();
+                        break;
+                    case "icon":
+                        icon = reader.GetString();
+                        break;
+                    case "facets":
+                        facets = JsonSerializer.Deserialize<List<JsonFacet>>(ref reader, options) ?? new List<JsonFacet>();
+                        break;
+                    case "launchatboot":
+                        launchatboot = reader.GetBoolean();
+                        break;
+                    case "launchinterval":
+                        launchinterval = reader.GetInt32();
+                        break;
+                    case "key":
+                        var converter = new KeyToStringConverter();
+                        key = (VirtualKey)converter.ConvertBack(reader.GetString(), typeof(VirtualKey), null, null);
+                        break;
+                    case "modifiers":
+                        modifiers = (VirtualKeyModifiers)Enum.Parse(typeof(VirtualKeyModifiers), reader.GetString());
+                        break;
+                }
+            }
+
+            return new Sphere(name, description, icon, new ObservableCollection<JsonFacet>(facets), launchatboot, launchinterval, key, modifiers);
+        }
+
+        public override void Write(Utf8JsonWriter writer, Sphere value, JsonSerializerOptions options)
+        {
+            writer.WriteStartObject();
+            writer.WriteString("name", value.Name);
+            writer.WriteString("description", value.Description);
+            writer.WriteString("icon", value.Icon);
+            writer.WritePropertyName("facets");
+            JsonSerializer.Serialize(writer, value.Facets, options);
+            writer.WriteBoolean("launchatboot", value.LaunchAtBoot);
+            writer.WriteNumber("launchinterval", value.LaunchInterval);
+            writer.WriteString("key", value.Key.ToString());
+            writer.WriteString("modifiers", value.Modifiers.ToString());
+            writer.WriteEndObject();
+        }
+    }
+
     public class BooleanToIconElementConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, string language)
@@ -47,64 +119,104 @@ namespace Spheres.Models
         public Sphere()
         {
             Name = "";
-            Facets = new List<JsonFacet>();
         }
 
-        [JsonConstructor]
-        public Sphere(string name, string? description, string icon, List<JsonFacet> facets)
+        public Sphere(
+            string name,
+            string? description,
+            string icon, 
+            ObservableCollection<JsonFacet> facets,
+            bool launchatboot = false,
+            int launchinterval = 0,
+            VirtualKey key = VirtualKey.None,
+            VirtualKeyModifiers modifiers = VirtualKeyModifiers.None
+            )
         {
             Name = name;
             Description = description;
             Icon = icon;
             Facets = facets;
+            LaunchAtBoot = launchatboot;
+            LaunchInterval = launchinterval;
+            Key = key;
+            Modifiers = modifiers;
+            Processes = [];
         }
 
-        [JsonPropertyName("name")]
         public string Name { get; set; }
 
-        [JsonPropertyName("description")]
         public string? Description { get; set; }
 
-        [JsonPropertyName("icon")]
         public string Icon { get; set; }
 
-        [JsonPropertyName("facets")]
-        public List<JsonFacet> Facets { get; set; }
+        [ObservableProperty]
+        public partial ObservableCollection<JsonFacet> Facets { get; set; }
 
-        [JsonIgnore]
+        public bool LaunchAtBoot { get; set; }
+
+        public int LaunchInterval { get; set; }
+
+        public VirtualKey Key { get; set; }
+
+        public  VirtualKeyModifiers Modifiers { get; set; }
+
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(IsRunning))]
-        public List<ValueTuple<int, string, string>> processes = new();
+        public partial ObservableCollection<ValueTuple<int, string, string>> Processes { get; set; }
 
-        [JsonIgnore]
         public bool IsRunning => Processes.Count > 0;
 
-        public override bool Equals(object? obj)
+        public bool HotKeyRegistered = false;
+
+        public async Task Init()
         {
-            return Equals(obj as Sphere);
+            var tasks = Facets.Select(facet => facet.GetIconAsync()).ToList();
+            var icons = await Task.WhenAll(tasks);
+            for (int i = 0; i < Facets.Count; i++)
+            {
+                Facets[i].Picon = icons[i];
+            }
         }
 
-        public bool Equals(Sphere? other)
+        public async Task Load()
         {
-            if (other == null)
-                return false;
+            if (LaunchAtBoot)
+            {
+                await Start();
+            }
 
-            return EqualityComparer<List<JsonFacet>>.Default.Equals(Facets, other.Facets);
+            RegisterHotKey();
         }
 
-        public override int GetHashCode()
+        public void RegisterHotKey()
         {
-            return HashCode.Combine(Facets);
+            if (Key != VirtualKey.None)
+            {
+                IntPtr windowHandle = WindowNative.GetWindowHandle(App.m_window);
+                HotKeyRegistered = User32.RegisterHotKey(windowHandle, GetHashCode(), GetModifiers(Modifiers), (uint)Key);
+
+                if (HotKeyRegistered)
+                {
+                    Debug.WriteLine($"Hotkey registered: {GetHashCode()} - {Key} - {Modifiers}");
+                }
+            }
         }
 
-        public static bool operator ==(Sphere? left, Sphere? right)
+        public void UnregisterHotKey()
         {
-            return EqualityComparer<Sphere>.Default.Equals(left, right);
+            if (HotKeyRegistered)
+            {
+                IntPtr windowHandle = WindowNative.GetWindowHandle(App.m_window);
+                User32.UnregisterHotKey(windowHandle, GetHashCode());
+                HotKeyRegistered = false;
+            }
         }
 
-        public static bool operator !=(Sphere? left, Sphere? right)
+        public void UpdateProcesses(List<ValueTuple<int, string, string>> processes)
         {
-            return !(left == right);
+            Processes.Clear();
+            Processes = [..processes];
+            OnPropertyChanged(nameof(IsRunning));
         }
 
         public async Task<bool> Toggle()
@@ -123,8 +235,19 @@ namespace Spheres.Models
 
         public async Task Start()
         {
-            var processesArray = await Task.WhenAll(Facets.Select(facet => Task.FromResult(facet.Start())).ToList());
-            Processes = processesArray.ToList();
+            if (LaunchInterval > 0 && Facets.Count > 1)
+            {
+                foreach (var facet in Facets)
+                {
+                    Processes.Add(facet.Start());
+                    await Task.Delay(LaunchInterval);
+                }
+            }
+            else
+            {
+                var ProcessesArray = await Task.WhenAll(Facets.Select(facet => Task.FromResult(facet.Start())).ToList());
+                Processes = [.. ProcessesArray];
+            }
         }
 
         public async Task Stop()
@@ -168,12 +291,42 @@ namespace Spheres.Models
             if (notClosedPids.Count > 0)
             {
                 var arguments = string.Join(" ", notClosedPids.ToArray());
-                Debug.WriteLine($"Processes to close: {arguments}");
                 Stop_WithSpheresExit(arguments);
             }
 
             Processes.Clear();
             OnPropertyChanged(nameof(IsRunning));
+        }
+
+        public async Task AddFacet(JsonFacet facet)
+        {
+            if (facet is not null)
+            {
+                facet.Picon = await facet.GetIconAsync();
+                Facets.Add(facet);
+                OnPropertyChanged(nameof(Facets));
+            }
+        }
+
+        public void RemoveFacet(JsonFacet facet)
+        {
+            if (facet is not null)
+            {
+                Facets.Remove(facet);
+                OnPropertyChanged(nameof(Facets));
+            }
+        }
+
+        public void SetKey(VirtualKey key)
+        {
+            Key = key;
+            OnPropertyChanged(nameof(Key));
+        }
+
+        public void SetModifiers(VirtualKeyModifiers modifiers)
+        {
+            Modifiers = modifiers;
+            OnPropertyChanged(nameof(Modifiers));
         }
 
         public static void Stop_WithSpheresExit(string arguments)
@@ -200,6 +353,85 @@ namespace Spheres.Models
             {
                 Debug.WriteLine("Failed to start Spheres_Exit.");
             }
+        }
+
+        public async Task Save()
+        {
+            UnregisterHotKey();
+
+            StorageFolder localFolder = ApplicationData.Current.LocalFolder;
+
+            StorageFile? file = await localFolder.TryGetItemAsync($"sphere_{JsonNamingPolicy.CamelCase.ConvertName(Name)}.json") as StorageFile;
+            bool newFile = false;
+
+
+            if (file == null)
+            {
+                file = await localFolder.CreateFileAsync($"sphere_{JsonNamingPolicy.CamelCase.ConvertName(Name)}.tmp", CreationCollisionOption.ReplaceExisting);
+                newFile = true;
+            }
+
+            using (var stream = await file.OpenStreamForWriteAsync())
+            {
+                SphereJsonConverter converter = new SphereJsonConverter();
+                var options = new JsonSerializerOptions();
+                stream.SetLength(0);
+
+                using (var writer = new Utf8JsonWriter(stream))
+                {
+                    converter.Write(writer, this, options);
+                }
+            }
+
+            if (newFile)
+            {
+                await file.RenameAsync($"sphere_{JsonNamingPolicy.CamelCase.ConvertName(Name)}.json", NameCollisionOption.ReplaceExisting);
+            }
+
+            RegisterHotKey();
+        }
+
+        public override bool Equals(object? obj)
+        {
+            return Equals(obj as Sphere);
+        }
+
+        public bool Equals(Sphere? other)
+        {
+            return other is not null &&
+                   Name == other.Name &&
+                   Description == other.Description &&
+                   Facets.SequenceEqual(other.Facets);
+        }
+
+        public override int GetHashCode()
+        {
+            int facetsHashCode = Facets.Aggregate(0, (hash, facet) => HashCode.Combine(hash, facet.GetHashCode()));
+            return HashCode.Combine(Name, Description, facetsHashCode);
+        }
+
+        public static bool operator ==(Sphere? left, Sphere? right)
+        {
+            return EqualityComparer<Sphere>.Default.Equals(left, right);
+        }
+
+        public static bool operator !=(Sphere? left, Sphere? right)
+        {
+            return !(left == right);
+        }
+
+        public static User32.HotKeyModifiers GetModifiers(VirtualKeyModifiers modifiers)
+        {
+            User32.HotKeyModifiers result = 0;
+            if (modifiers.HasFlag(VirtualKeyModifiers.Control))
+                result |= User32.HotKeyModifiers.MOD_CONTROL;
+            if (modifiers.HasFlag(VirtualKeyModifiers.Shift))
+                result |= User32.HotKeyModifiers.MOD_SHIFT;
+            if (modifiers.HasFlag(VirtualKeyModifiers.Menu))
+                result |= User32.HotKeyModifiers.MOD_ALT;
+            if (modifiers.HasFlag(VirtualKeyModifiers.Windows))
+                result |= User32.HotKeyModifiers.MOD_WIN;
+            return result;
         }
     }
 }

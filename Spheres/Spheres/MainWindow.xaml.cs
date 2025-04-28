@@ -1,27 +1,28 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel.Design;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Threading.Tasks;
-using CommunityToolkit.WinUI;
 using CommunityToolkit.WinUI.Collections;
+using CommunityToolkit.WinUI.Converters;
 using FlaUI.UIA3;
+using H.NotifyIcon;
+using H.NotifyIcon.Core;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Navigation;
 using Spheres.Models;
+using Spheres.ViewModels;
 using Spheres.Views;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
+using Vanara.PInvoke;
 using Windows.Storage;
+using WinRT.Interop;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -30,12 +31,20 @@ namespace Spheres
 {
     public sealed partial class MainWindow : Window
     {
-        public Dictionary<string, Sphere> SavedSpheres { get; set; } = [];
         private FileSystemWatcher localFolderWatcher = new();
+
+        private readonly ComCtl32.SUBCLASSPROC WindowSubclassProc;
+
         public UIA3Automation automation { get; } = new();
+
+        public AppViewModel AppViewModel { get; } = new(false, new ObservableCollection<Sphere>());
+
         public MainWindow()
         {
+            WindowSubclassProc = new ComCtl32.SUBCLASSPROC(WindowSubclass);
+
             this.InitializeComponent();
+
             localFolderWatcher.Path = ApplicationData.Current.LocalFolder.Path;
             localFolderWatcher.NotifyFilter = NotifyFilters.FileName;
             localFolderWatcher.Filter = "sphere_*.json";
@@ -48,6 +57,14 @@ namespace Spheres
 
             this.NavView.Loaded += NavView_Loaded;
             this.NavView.SelectionChanged += NavView_SelectionChanged;
+
+            HWND hWND = WindowNative.GetWindowHandle(this);
+            ComCtl32.SetWindowSubclass(hWND, WindowSubclassProc, 0, 0);
+        }
+
+        public nint GetWindowHandle()
+        {
+            return WindowNative.GetWindowHandle(this);
         }
 
         private async Task MainWindow_LoadSpheres()
@@ -61,11 +78,41 @@ namespace Spheres
             {
                 using (var stream = await file.OpenStreamForReadAsync())
                 {
-                    Sphere? fileSphere = JsonSerializer.Deserialize<Sphere>(stream);
-                    SavedSpheres.Add(fileSphere.Name, fileSphere);
+                    SphereJsonConverter converter = new SphereJsonConverter();
+                    var options = new JsonSerializerOptions();
+                    var reader = new Utf8JsonReader(await File.ReadAllBytesAsync(file.Path));
+                    Sphere? fileSphere = converter.Read(ref reader, typeof(Sphere), options);
+                    await fileSphere.Init();
+                    await fileSphere.Load();
+                    AppViewModel.Spheres.Add(fileSphere);
                     AddNavViewItem(fileSphere.Name, fileSphere.Icon, typeof(SpherePage));
-                    ((App)App.Current).AddTrayItem(fileSphere.Name);
+                    AddTrayItem(fileSphere);
                 }
+            }
+        }
+
+        public void AddTrayItem(Sphere sphere)
+        {
+            if (((App)App.Current).TrayIcon.ContextFlyout is MenuFlyout menuFlyout)
+            {
+                var checkedBinding = new Binding()
+                {
+                    Path = new PropertyPath("IsRunning"),
+                    Mode = BindingMode.OneWay,
+                    UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged
+                };
+
+                var trayItem = new ToggleMenuFlyoutItem()
+                {
+                    Text = sphere.Name,
+                    Command = (XamlUICommand)((App)App.Current).Resources["LaunchCloseSphereCommand"],
+                    CommandParameter = sphere.Name,
+                    DataContext = sphere
+                };
+
+                trayItem.SetBinding(ToggleMenuFlyoutItem.IsCheckedProperty, checkedBinding);
+
+                menuFlyout.Items.Insert(0, trayItem);
             }
         }
 
@@ -76,12 +123,16 @@ namespace Spheres
 
             using (var stream = await file.OpenStreamForReadAsync())
             {
-                Sphere? fileSphere = JsonSerializer.Deserialize<Sphere>(stream);
+                SphereJsonConverter converter = new SphereJsonConverter();
+                var options = new JsonSerializerOptions();
+                var reader = new Utf8JsonReader(await File.ReadAllBytesAsync(file.Path));
+                Sphere? fileSphere = converter.Read(ref reader, typeof(Sphere), options);
+                await fileSphere.Init();
                 if (fileSphere != null)
                 {
                     DispatcherQueue.TryEnqueue(() =>
                     {
-                        SavedSpheres.Add(fileSphere.Name, fileSphere);
+                        AppViewModel.Spheres.Add(fileSphere);
                         AddNavViewItem(fileSphere.Name, fileSphere.Icon, typeof(SpherePage));
                         SetCurrentNavViewItem(GetNavViewItems(typeof(SpherePage), fileSphere.Name).FirstOrDefault());
                     });
@@ -100,6 +151,37 @@ namespace Spheres
             SetCurrentNavViewItem(GetNavViewItems(typeof(HomePage), "Dashboard").First());
         }
 
+        private nint WindowSubclass(HWND hWnd, uint uMsg, nint wParam, nint lParam, nuint uIdSubclass, nint dwRefData)
+        {
+            if (uMsg == (uint)User32.WindowMessage.WM_HOTKEY)
+            {
+                int hotkeyId = (int)wParam;
+                var hotkeyedSphere = AppViewModel.Spheres.FirstOrDefault(s => s.GetHashCode() == hotkeyId);
+
+                if (hotkeyedSphere != null)
+                {
+                    DispatcherQueue.TryEnqueue(async () =>
+                    {
+                        await hotkeyedSphere.Toggle();
+                    });
+                }
+            }
+
+            if (uMsg == (uint)User32.WindowMessage.WM_SYSCOMMAND && wParam.ToInt32() == (int)User32.SysCommand.SC_MINIMIZE)
+            {
+                this.Hide();
+                return 0;
+            }
+
+            if (uMsg == (uint)User32.WindowMessage.WM_CLOSE)
+            {
+                this.Hide();
+                return 0;
+            }
+
+            return ComCtl32.DefSubclassProc(hWnd, uMsg, wParam, lParam);
+        }
+
         private void NavView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
         {
             SetCurrentNavViewItem(args.SelectedItemContainer as NavigationViewItem);
@@ -113,19 +195,19 @@ namespace Spheres
             {
                 return;
             }
-
             if (item.Tag == null)
             {
                 return;
             }
-
             if (item.Tag.ToString() == typeof(HomePage).FullName)
             {
-                NavFrame.Navigate(typeof(HomePage), SavedSpheres.Values.ToArray());
+                // Pass reference to all spheres
+                NavFrame.Navigate(typeof(HomePage), AppViewModel);
             }
             else if (item.Tag.ToString() == typeof(SpherePage).FullName)
             {
-                NavFrame.Navigate(typeof(SpherePage), SavedSpheres.GetValueOrDefault(item.Content.ToString()));
+                AppViewModel.SelectedSphere = AppViewModel.Spheres.FirstOrDefault(s => s.Name == item.Content.ToString());
+                NavFrame.Navigate(typeof(SpherePage), AppViewModel);
             }
             else
             {

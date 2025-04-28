@@ -88,7 +88,6 @@ namespace Spheres_Collect
             };
             form.Controls.Add(killButton);
 
-            // Handle the button click event
             cancelButton.Click += (sender, e) =>
             {
                 form.Close();
@@ -99,7 +98,6 @@ namespace Spheres_Collect
                 form.Close();
             };
 
-            // Show the form as a dialog
             form.ShowDialog();
         }
 

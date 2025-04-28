@@ -4,15 +4,10 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Management;
-using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
-using CommunityToolkit.Mvvm.ComponentModel;
-using FlaUI.Core.WindowsAPI;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Spheres.ViewModels;
-using Vanara.PInvoke;
 using Windows.System.Diagnostics;
 using User32 = Vanara.PInvoke.User32;
 
@@ -46,8 +41,8 @@ namespace Spheres.Models
 
         public JsonFacet(AddFacetViewModel viewModel)
         {
-            Type = viewModel.type;
-            Content = viewModel.content;
+            Type = viewModel.Type;
+            Content = viewModel.Content;
         }
 
         public async Task<BitmapImage> GetIconAsync()

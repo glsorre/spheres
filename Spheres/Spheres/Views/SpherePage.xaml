@@ -1,55 +1,127 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Page
-    x:Class="Spheres.Views.SpherePage"
-    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:local="using:Spheres.Views"
-    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:controls="using:CommunityToolkit.WinUI.Controls"
-    xmlns:ui="using:CommunityToolkit.WinUI"
-    xmlns:models="using:Spheres.Models"  
-    xmlns:viewmodels="using:Spheres.ViewModels"  
-    xmlns:converters="using:CommunityToolkit.WinUI.Converters"
-    d:DataContext="{d:DesignInstance Type=viewmodels:SphereViewModel}"  
-    mc:Ignorable="d">
+<Page  
+   x:Class="Spheres.Views.SpherePage"  
+   xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"  
+   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"  
+   xmlns:local="using:Spheres.Views"  
+   xmlns:d="http://schemas.microsoft.com/expression/blend/2008"  
+   xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"  
+   xmlns:controls="using:CommunityToolkit.WinUI.Controls"  
+   xmlns:ui="using:CommunityToolkit.WinUI"  
+   xmlns:models="using:Spheres.Models"    
+   xmlns:viewmodels="using:Spheres.ViewModels"    
+   xmlns:converters="using:CommunityToolkit.WinUI.Converters"  
+   d:DataContext="{d:DesignInstance Type=viewmodels:SphereViewModel}"    
+   mc:Ignorable="d">
 
-    <StackPanel Orientation="Vertical" Spacing="10" Padding="20" VerticalAlignment="Top">
-        <TextBlock Style="{StaticResource TitleTextBlockStyle}" Text="{Binding Sphere.Name}" />
-        <controls:SettingsCard
-           Header="Launch at startup"
-           HeaderIcon="{ui:FontIcon Glyph=&#xE819;}"
-           IsEnabled="False">
-            <StackPanel Spacing="40" Orientation="Horizontal">
-                <ToggleSwitch />
+    <Page.Resources>
+        <converters:BoolNegationConverter x:Key="BoolNegationConverter" />
+        <DataTemplate x:Key="JsonFacetTemplate" x:DataType="models:JsonFacet">
+            <Grid Padding="4">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Image
+                x:Name="FacetIcon"
+                Source="{x:Bind Picon}"
+                Width="32"
+                Height="32"
+                Grid.Column="0"
+                Grid.Row="0"
+                Grid.RowSpan="2"/>
+                <TextBlock
+                Grid.Column="1"
+                Grid.Row="0"
+                Text="{x:Bind Type}"
+                Style="{ThemeResource BodyStrongTextBlockStyle}"
+                Margin="12,6,0,0"/>
+                <TextBlock 
+                Grid.Column="1"
+                Grid.Row="1"
+                Text="{x:Bind Content}"
+                Style="{ThemeResource CaptionTextBlockStyle}"
+                TextWrapping="Wrap"
+                Margin="12,0,0,6"/>
+                <Button
+                x:Name="RemoveButton"
+                Grid.Column="2"
+                Grid.RowSpan="2"
+                Margin="6"
+                Style="{StaticResource EllipsisButton}"
+                Click="RemoveFacetButton_Click">
+                    <FontIcon Glyph="&#xECC9;" />
+                </Button>
+            </Grid>
+        </DataTemplate>
+    </Page.Resources>
+
+    <ScrollView>
+        <StackPanel Orientation="Vertical" Spacing="10" Padding="20" VerticalAlignment="Top">
+            <TextBlock Style="{StaticResource TitleTextBlockStyle}" Text="{Binding SelectedSphere.Name}" />
+            <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" Text="{Binding SelectedSphere.Description}" />
+            <controls:SettingsCard  
+               Header="Launch at startup"  
+               Description="Launch when SelectedSpheres boots"  
+               HeaderIcon="{ui:FontIcon Glyph=&#xE819;}">
+                <StackPanel Spacing="40" Orientation="Horizontal">
+                    <ToggleSwitch IsOn="{Binding SelectedSphere.LaunchAtBoot, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                </StackPanel>
+            </controls:SettingsCard>
+            <controls:SettingsCard  
+               Header="Launch interval"  
+               Description="Interval between apps launches in seconds"  
+               HeaderIcon="{ui:FontIcon Glyph=&#xE916;}">
+                <StackPanel Spacing="40" Orientation="Horizontal">
+                    <Slider TickFrequency="1" TickPlacement="Outside" Maximum="3" Minimum="0" Value="{Binding SelectedSphere.LaunchInterval, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                </StackPanel>
+            </controls:SettingsCard>
+            <controls:SettingsCard  
+               Header="Hotkey"  
+               Description="Hotkey to launch"  
+               HeaderIcon="{ui:FontIcon Glyph=&#xE961;}">
+                <StackPanel Spacing="40" Orientation="Horizontal">
+                    <ComboBox ItemsSource="{Binding Keys}" SelectionChanged="KeysComboBox_SelectionChanged" SelectedItem="{Binding SelectedSphere.Key}">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Converter={StaticResource KeyToStringConverter}}" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <ComboBox ItemsSource="{Binding Modifiers}" SelectionChanged="ModifiersComboBox_SelectionChanged" SelectedItem="{Binding SelectedSphere.Modifiers}">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Converter={StaticResource ModifiersToStringConverter}}" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                </StackPanel>
+            </controls:SettingsCard>
+            <Grid Grid.Column="1" RowSpacing="5">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Text="SelectedSphere facets" Style="{StaticResource BodyStrongTextBlockStyle}" Padding="5,10,10,10"/>
+                <Border Grid.Row="1" BorderThickness="1" BorderBrush="{StaticResource AppBarBorderThemeBrush}" Background="White" Margin="5,0,0,0">
+                    <ScrollView>
+                        <ListView ItemsSource="{Binding SelectedSphere.Facets, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}" ItemTemplate="{StaticResource JsonFacetTemplate}" x:Name="SelectedSpheresFacetsList" />
+                    </ScrollView>
+                </Border>
+                <CommandBar Grid.Row="2" IsOpen="False" DefaultLabelPosition="Right" HorizontalAlignment="Right">
+                    <AppBarButton Icon="Add" Label="Add facet" x:Name="AddFacetButton" Click="AddFacetButton_Click"/>
+                </CommandBar>
+            </Grid>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Grid.Row="2" Padding="0,10">
+                <Button Content="Save" Style="{StaticResource AccentButtonStyle}" Click="SaveButton_Click" x:Name="SaveButton" />
             </StackPanel>
-        </controls:SettingsCard>
-        <controls:SettingsCard
-           Header="Launch interval"
-           HeaderIcon="{ui:FontIcon Glyph=&#xE916;}"
-           IsEnabled="False">
-           <StackPanel Spacing="40" Orientation="Horizontal">
-                <ComboBox IsEditable="True" />
-                <ToggleSwitch />
-            </StackPanel>
-        </controls:SettingsCard>
-        <controls:SettingsCard
-           Header="Hotkey"
-           HeaderIcon="{ui:FontIcon Glyph=&#xE961;}"
-           IsEnabled="False">
-            <StackPanel Spacing="40" Orientation="Horizontal">
-                <ComboBox IsEditable="True" />
-                <ToggleSwitch />
-            </StackPanel>
-        </controls:SettingsCard>
-        <controls:SettingsCard
-           Header="Monitor facets"
-           HeaderIcon="{ui:FontIcon Glyph=&#xE7FA;}"
-           IsEnabled="False">
-            <StackPanel Spacing="40" Orientation="Horizontal">
-                <CheckBox />
-                <ToggleSwitch />
-            </StackPanel>
-        </controls:SettingsCard>
-    </StackPanel>
+        </StackPanel>
+    </ScrollView>
 </Page>

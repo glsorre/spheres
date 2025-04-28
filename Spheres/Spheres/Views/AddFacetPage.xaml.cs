@@ -30,9 +30,6 @@ namespace Spheres.Views
             this.InitializeComponent();
             DataContext = new AddFacetViewModel();
         }
-
-        // Existing code remains unchanged
-
         public async void ChooseButton_Click(object sender, RoutedEventArgs e)
         {
             if (DataContext is AddFacetViewModel viewModel)
@@ -41,7 +38,7 @@ namespace Spheres.Views
 
                 var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(App.m_window);
                 
-                if (viewModel.type == FacetType.App)
+                if (viewModel.Type == FacetType.App)
                 {
                     var picker = new Windows.Storage.Pickers.FileOpenPicker();
                     WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
@@ -51,14 +48,14 @@ namespace Spheres.Views
                     var file = await picker.PickSingleFileAsync();
                     content = file?.Path;
                 }
-                else if (viewModel.type == FacetType.Folder)
+                else if (viewModel.Type == FacetType.Folder)
                 {
                     var picker = new Windows.Storage.Pickers.FolderPicker();
                     WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
                     var folder = await picker.PickSingleFolderAsync();
                     content = folder?.Path;
                 }
-                else if (viewModel.type == FacetType.File)
+                else if (viewModel.Type == FacetType.File)
                 {
                     var picker = new Windows.Storage.Pickers.FileOpenPicker();
                     WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
@@ -68,7 +65,7 @@ namespace Spheres.Views
                     content = file?.Path;
                 }
 
-                viewModel.content = content;
+                viewModel.Content = content;
             }
         }
     }

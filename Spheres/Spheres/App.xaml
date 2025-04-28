@@ -3,7 +3,8 @@
     x:Class="Spheres.App"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:local="using:Spheres">
+    xmlns:local="using:Spheres"
+    xmlns:viewmodels="using:Spheres.ViewModels">
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
@@ -12,6 +13,8 @@
                 <!-- Other merged dictionaries here -->
             </ResourceDictionary.MergedDictionaries>
             <!-- Other app resources here -->
+            <viewmodels:ModifiersToStringConverter x:Key="ModifiersToStringConverter" />
+            <viewmodels:KeyToStringConverter x:Key="KeyToStringConverter" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Data;
 using System.IO;
 using System.Linq;
@@ -126,13 +127,9 @@ namespace Spheres.Views
                 sphere.Name = viewModel.sphereName;
                 sphere.Description = viewModel.sphereDescription;
                 sphere.Icon = viewModel.sphereIcon.Glyph;
-                sphere.Facets = jsonFacets;
-
-                String fileName = $"sphere_{sphere.GetHashCode()}.tmp";
-
-                StorageFile sampleFile = await localFolder.CreateFileAsync(fileName, CreationCollisionOption.ReplaceExisting);
-                await FileIO.WriteTextAsync(sampleFile, JsonSerializer.Serialize(sphere));
-                await sampleFile.RenameAsync(fileName.Replace("tmp", "json"), NameCollisionOption.ReplaceExisting);
+                sphere.Facets = [..jsonFacets];
+                sphere.Processes = [];
+                await sphere.Save();
             }
         }
 
@@ -168,7 +165,6 @@ namespace Spheres.Views
                     if (dialogViewModel != null)
                     {
                         var facet = new JsonFacet(dialogViewModel);
-                        facet.Picon = await facet.GetIconAsync();
                         var addViewModel = DataContext as AddViewModel;
                         addViewModel?.AddToSphere(facet);
                     }

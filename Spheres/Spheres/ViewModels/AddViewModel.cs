@@ -1,48 +1,24 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.IO;
+using System.IO.Pipes;
 using System.Linq;
-using System.Runtime.InteropServices;
-using System.Windows.Forms;
-using CommunityToolkit.WinUI.Collections;
+using System.Text.Json;
+using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.WinUI.Collections;
 using FlaUI.Core.AutomationElements;
-using FlaUI.Core.Conditions;
-using FlaUI.Core.Definitions;
-using FlaUI.Core.WindowsAPI;
-using FlaUI.UIA3;
-using FlaUI.UIA3.Converters;
-using FlaUI.UIA3.Patterns;
 using FuzzySharp;
+using FuzzySharp.PreProcess;
+using Microsoft.UI.Xaml.Controls;
 using Spheres.Models;
-using Vanara.Extensions.Reflection;
+using Spheres_Lib;
 using Vanara.PInvoke;
-using Windows.Devices.I2c;
-using Windows.System;
-using static Vanara.PInvoke.ComCtl32;
 using Process = System.Diagnostics.Process;
 using User32 = Vanara.PInvoke.User32;
-using System.Threading.Tasks;
-using System;
-using CommunityToolkit.Mvvm.Input;
-using System.Security.Principal;
-using CommunityToolkit.Common;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
-using System.Text;
-using System.Text.Json;
-using Microsoft.UI.Xaml.Controls;
-using System.IO.Pipes;
-using System.IO;
-using System.Threading;
-using static Vanara.PInvoke.Kernel32.PSS_HANDLE_ENTRY;
-using static Vanara.PInvoke.Kernel32;
-using System.Drawing;
-using Spheres_Lib;
-using System.Reflection.Metadata;
-using System.Xml.Linq;
-using Spheres_Collect;
-using FuzzySharp.PreProcess;
-using Windows.System.Profile;
 
 
 namespace Spheres.ViewModels;
@@ -81,38 +57,39 @@ public partial class AddViewModel : ObservableObject
     {
         areRunningFacetsLoaded = false;
         collectTrayFacets = false;
+        sphereName = string.Empty;
+        sphereDescription = string.Empty;
+        sphereDescription = string.Empty;
 
         icons = new FontIcon[]
         {
-            new FontIcon { Glyph = "\uE80F" }, // Home
-            new FontIcon { Glyph = "\uE713" }, // Settings
-            new FontIcon { Glyph = "\uE72A" }, // Forward
-            new FontIcon { Glyph = "\uE72C" }, // Refresh
-            new FontIcon { Glyph = "\uE8B7" }, // Folder
-            new FontIcon { Glyph = "\uE753" }, // Cloud
-            new FontIcon { Glyph = "\uE77B" }, // People
-            new FontIcon { Glyph = "\uE721" }, // Search
-            new FontIcon { Glyph = "\uE72D" }, // Share
-            new FontIcon { Glyph = "\uE787" }, // Calendar
-            new FontIcon { Glyph = "\uE715" }, // Mail
-            new FontIcon { Glyph = "\uE8BD" }, // Chat
-            new FontIcon { Glyph = "\uE8A1" }, // Link
-            new FontIcon { Glyph = "\uE8EC" }, // Tag
-            new FontIcon { Glyph = "\uE707" }, // Location
-            new FontIcon { Glyph = "\uE718" }, // Pin
-            new FontIcon { Glyph = "\uE774" }, // Globe
-            new FontIcon { Glyph = "\uEB51" }, // Heart
-            new FontIcon { Glyph = "\uE734" }, // Star
-            new FontIcon { Glyph = "\uE7C1" }, // Flag
-            new FontIcon { Glyph = "\uE722" }, // Camera
-            new FontIcon { Glyph = "\uE714" }, // Video
-            new FontIcon { Glyph = "\uE8D6" }, // Music
-            new FontIcon { Glyph = "\uE82D" }, // Lightbulb
-            new FontIcon { Glyph = "\uE91E" }, // Trophy
-            new FontIcon { Glyph = "\uE8E1" }, // Medal
-            new FontIcon { Glyph = "\uE8F0" }, // Puzzle
-            new FontIcon { Glyph = "\uE7AF" }, // Rocket
-            new FontIcon { Glyph = "\uE774" }, // Globe with Arrow
+           new FontIcon { Glyph = "\uE80F" }, // Home  
+           new FontIcon { Glyph = "\uE713" }, // Settings  
+           new FontIcon { Glyph = "\uE72A" }, // Forward  
+           new FontIcon { Glyph = "\uE72C" }, // Refresh  
+           new FontIcon { Glyph = "\uE8B7" }, // Folder  
+           new FontIcon { Glyph = "\uE753" }, // Cloud  
+           new FontIcon { Glyph = "\uE77B" }, // People  
+           new FontIcon { Glyph = "\uE721" }, // Search  
+           new FontIcon { Glyph = "\uE72D" }, // Share  
+           new FontIcon { Glyph = "\uE787" }, // Calendar  
+           new FontIcon { Glyph = "\uE715" }, // Mail  
+           new FontIcon { Glyph = "\uE8BD" }, // Chat  
+           new FontIcon { Glyph = "\uE8A1" }, // Link  
+           new FontIcon { Glyph = "\uE8EC" }, // Tag  
+           new FontIcon { Glyph = "\uE707" }, // Location  
+           new FontIcon { Glyph = "\uE718" }, // Pin  
+           new FontIcon { Glyph = "\uEB51" }, // Heart  
+           new FontIcon { Glyph = "\uE734" }, // Star  
+           new FontIcon { Glyph = "\uE7C1" }, // Flag  
+           new FontIcon { Glyph = "\uE722" }, // Camera  
+           new FontIcon { Glyph = "\uE714" }, // Video  
+           new FontIcon { Glyph = "\uE8D6" }, // Music  
+           new FontIcon { Glyph = "\uE82D" }, // Lightbulb  
+           new FontIcon { Glyph = "\uE91E" }, // Trophy  
+           new FontIcon { Glyph = "\uE8E1" }, // Medal  
+           new FontIcon { Glyph = "\uE8F0" }, // Puzzle  
+           new FontIcon { Glyph = "\uE7AF" }, // Rocket  
         };
 
         sphereIcon = icons[0];
@@ -373,7 +350,6 @@ public partial class AddViewModel : ObservableObject
         if (token != "" && !processTree.BlackListed) {
             int weighted = Fuzz.WeightedRatio(name, token, PreprocessMode.Full);
 
-            // Add matching facet
             if (weighted > 65)
             {
                 Debug.WriteLine($"fuzzy results: {name} - {token}");
@@ -382,7 +358,6 @@ public partial class AddViewModel : ObservableObject
             }
         }
 
-        // Recurse through children
         foreach (var child in processTree.Children)
         {
             FindMatchingFacetsRecursive(name, child, matchedFacets, matchedWeights);

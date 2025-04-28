@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
@@ -35,36 +36,34 @@ namespace Spheres.Views
         {
             base.OnNavigatedTo(e);
 
-            if (e.Parameter is Sphere[] spheres)
+            var appViewModel = (AppViewModel)e.Parameter;
+
+            DataContext = new HomeViewModel(appViewModel);
+
+            if (DataContext is HomeViewModel viewModel)
             {
-                DataContext = new HomeViewModel(spheres);
-                if (DataContext is HomeViewModel viewModel)
+                viewModel.IsLoading = false;
+            }
+        }
+
+        private async void LaunchButton_Toggled(object sender, RoutedEventArgs e)
+        {
+            if (sender is ToggleButton toggleButton)
+            {
+                if (toggleButton.DataContext is Sphere sphere)
                 {
-                    viewModel.isLoading = false;
+                    await sphere.Toggle();
                 }
             }
         }
 
-        private async void LaunchToogle_Toggled(object sender, RoutedEventArgs e)
+        private void EditButton_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is ToggleSwitch toggleSwitch)
+            if (sender is Button button)
             {
-                if (toggleSwitch.DataContext is Sphere sphere)
+                if (button.DataContext is Sphere sphere)
                 {
-                    if (toggleSwitch.IsOn)
-                    {
-                        DispatcherQueue.TryEnqueue(async () =>
-                        {
-                            await sphere.Start();
-                        });
-                    }
-                    else
-                    {
-                        DispatcherQueue.TryEnqueue(async () =>
-                        {
-                            await sphere.Stop();
-                        });
-                    }
+                    App.m_window.SetCurrentNavViewItem(App.m_window.GetNavViewItems(typeof(SpherePage), sphere.Name).FirstOrDefault());
                 }
             }
         }
