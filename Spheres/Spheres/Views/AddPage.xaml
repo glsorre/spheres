@@ -172,7 +172,7 @@
        </Grid>  
 
        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Grid.Row="2" Padding="0,10">
-            <Button Content="Create" Style="{StaticResource AccentButtonStyle}" IsEnabled="{Binding isCreateButtonEnabled}" Click="CreateButton_Click" x:Name="CreateButton" />
+            <Button Content="Create" Style="{StaticResource AccentButtonStyle}" IsEnabled="{Binding IsCreateButtonEnabled}" Click="CreateButton_Click" x:Name="CreateButton" />
         </StackPanel>  
    </Grid>  
 </Page>

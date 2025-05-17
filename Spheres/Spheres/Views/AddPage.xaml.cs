@@ -165,6 +165,7 @@ namespace Spheres.Views
                     if (dialogViewModel != null)
                     {
                         var facet = new JsonFacet(dialogViewModel);
+                        facet.Picon = await facet.GetIconAsync();
                         var addViewModel = DataContext as AddViewModel;
                         addViewModel?.AddToSphere(facet);
                     }

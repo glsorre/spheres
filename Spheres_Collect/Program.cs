@@ -15,21 +15,17 @@ namespace Spheres_Collect
         {
             try
             {
-                Console.WriteLine("Spheres_Collect started.");
                 FacetCollector collector = new FacetCollector();
                 collector.CollectProcessInformation();
                 var processTree = collector.BuildProcessTree();
                 FacetCollector.SystemSetterPropertySetterRecursive(processTree);
                 FacetCollector.LevelSetterRecursive(processTree, 0);
-                Console.WriteLine("Process tree built");
                 FacetCollector.PrintProcessTreeRecursive(processTree, 0);
                 string json = JsonSerializer.Serialize(processTree);
 
                 using (NamedPipeServerStream pipeServer = new NamedPipeServerStream("Spheres_Collect_Pipe", PipeDirection.Out))
                 {
-                    Console.WriteLine("Waiting for client connection...");
                     pipeServer.WaitForConnection();
-                    Console.WriteLine("Client connected.");
                     using (StreamWriter writer = new StreamWriter(pipeServer))
                     {
                         writer.AutoFlush = true;

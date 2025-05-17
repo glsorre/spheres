@@ -1,8 +1,0 @@
-{
-  "profiles": {
-    "Spheres_Exit": {
-      "commandName": "Project",
-      "commandLineArgs": "936*\"C:\\Program Files\\WindowsApps\\Microsoft.UWPCommunityToolkitSampleApp_8.2.0.0_x64__8wekyb3d8bbwe\\CommunityToolkit.App.Uwp.exe\""
-    }
-  }
-}

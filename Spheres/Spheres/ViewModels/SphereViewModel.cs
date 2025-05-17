@@ -7,6 +7,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.WinUI.Collections;
 using Microsoft.UI.Xaml.Data;
 using Spheres.Models;
+using Spheres.Views;
 using Windows.System;
 
 
@@ -168,6 +169,19 @@ public partial class SphereViewModel : AppViewModel
     public async Task Save()
     {
         await SelectedSphere.Save();
+    }
+
+    public async Task Delete()
+    {
+        App.m_window.DispatcherQueue.TryEnqueue(() =>
+        {
+            App.m_window.SetCurrentNavViewItem(App.m_window.GetNavViewItems(typeof(HomePage), "Dashboard").First());
+            App.m_window.RemoveNavViewItem(typeof(SpherePage), SelectedSphere.Name);
+        });
+        await SelectedSphere.Delete();
+        Spheres.Remove(SelectedSphere);
+        SelectedSphere = null;
+        OnPropertyChanged(nameof(SelectedSphere));
     }
 
     public void SelectModifier(VirtualKeyModifiers modifier)

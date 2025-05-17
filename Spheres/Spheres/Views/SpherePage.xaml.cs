@@ -49,11 +49,11 @@ namespace Spheres.Views
             }
         }
 
-        private async void SaveButton_Click(object sender, RoutedEventArgs e)
+        private async void RemoveButton_Click(object sender, RoutedEventArgs e)
         {
             if (DataContext is SphereViewModel viewModel)
             {
-                await viewModel.Save();
+                await viewModel.Delete();
             }
         }
 

@@ -109,7 +109,7 @@
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <TextBlock Grid.Row="0" Text="SelectedSphere facets" Style="{StaticResource BodyStrongTextBlockStyle}" Padding="5,10,10,10"/>
+                <TextBlock Grid.Row="0" Text="Sphere facets" Style="{StaticResource BodyStrongTextBlockStyle}" Padding="5,10,10,10"/>
                 <Border Grid.Row="1" BorderThickness="1" BorderBrush="{StaticResource AppBarBorderThemeBrush}" Background="White" Margin="5,0,0,0">
                     <ScrollView>
                         <ListView ItemsSource="{Binding SelectedSphere.Facets, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}" ItemTemplate="{StaticResource JsonFacetTemplate}" x:Name="SelectedSpheresFacetsList" />
@@ -120,7 +120,7 @@
                 </CommandBar>
             </Grid>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Grid.Row="2" Padding="0,10">
-                <Button Content="Save" Style="{StaticResource AccentButtonStyle}" Click="SaveButton_Click" x:Name="SaveButton" />
+                <Button Content="Remove" Style="{StaticResource AccentButtonStyle}" Click="RemoveButton_Click" x:Name="SaveButton" />
             </StackPanel>
         </StackPanel>
     </ScrollView>

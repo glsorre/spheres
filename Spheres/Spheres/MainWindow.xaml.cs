@@ -252,5 +252,17 @@ namespace Spheres
             };
             NavView.MenuItems.Add(item);
         }
+
+        public void RemoveNavViewItem(
+            Type type,
+            string name
+        )
+        {
+            var item = GetNavViewItems(type, name).FirstOrDefault();
+            if (item != null)
+            {
+                NavView.MenuItems.Remove(item);
+            }
+        }
     }
 }

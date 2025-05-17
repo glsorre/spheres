@@ -258,7 +258,8 @@ namespace Spheres.Models
             foreach (var process in Processes)
             {
                 var (pid, executable, name) = process;
-                bool success = false;
+
+                Debug.WriteLine($"Process to find: {pid} - {executable} {name}");
 
                 if (name != "")
                 {
@@ -329,8 +330,10 @@ namespace Spheres.Models
             OnPropertyChanged(nameof(Modifiers));
         }
 
-        public static void Stop_WithSpheresExit(string arguments)
+        public static Process? Stop_WithSpheresExit(string arguments)
         {
+            Debug.WriteLine($"Stop_WithSpheresExit: {arguments}");
+
             string parentFolderPath = Path.GetDirectoryName(AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar));
             string exePath = Path.Combine(parentFolderPath, "Spheres_Exit/Spheres_Exit.exe");
 
@@ -343,16 +346,7 @@ namespace Spheres.Models
                 Verb = "runas",
             };
 
-            Process? exitProcess = Process.Start(processInfo);
-
-            if (exitProcess != null)
-            {
-                Debug.WriteLine($"Spheres_Exit started: {processInfo.Arguments}");
-            }
-            else
-            {
-                Debug.WriteLine("Failed to start Spheres_Exit.");
-            }
+            return Process.Start(processInfo);
         }
 
         public async Task Save()
@@ -389,6 +383,17 @@ namespace Spheres.Models
             }
 
             RegisterHotKey();
+        }
+
+        public async Task Delete()
+        {
+            UnregisterHotKey();
+            StorageFolder localFolder = ApplicationData.Current.LocalFolder;
+            StorageFile? file = await localFolder.TryGetItemAsync($"sphere_{JsonNamingPolicy.CamelCase.ConvertName(Name)}.json") as StorageFile;
+            if (file != null)
+            {
+                await file.DeleteAsync(StorageDeleteOption.PermanentDelete);
+            }
         }
 
         public override bool Equals(object? obj)

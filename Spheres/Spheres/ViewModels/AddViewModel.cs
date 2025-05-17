@@ -20,13 +20,11 @@ using Vanara.PInvoke;
 using Process = System.Diagnostics.Process;
 using User32 = Vanara.PInvoke.User32;
 
-
 namespace Spheres.ViewModels;
 
 public partial class AddViewModel : ObservableObject
 {
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(isCreateButtonEnabled))]
     public partial bool areRunningFacetsLoaded { get; set; }
 
     [ObservableProperty]
@@ -36,7 +34,7 @@ public partial class AddViewModel : ObservableObject
     public partial AdvancedCollectionView sphereFacets { get; set; }
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(isCreateButtonEnabled))]
+    [NotifyPropertyChangedFor(nameof(IsCreateButtonEnabled))]
     public partial string sphereName { get; set; }
 
     [ObservableProperty]
@@ -51,7 +49,7 @@ public partial class AddViewModel : ObservableObject
     [ObservableProperty]
     public partial FontIcon sphereIcon { get; set; }
 
-    public bool isCreateButtonEnabled => areRunningFacetsLoaded && sphereFacets.Count > 0 && sphereName != null;
+    public bool IsCreateButtonEnabled => sphereFacets.Count > 0 & sphereName != "";
 
     public AddViewModel()
     {
@@ -126,7 +124,7 @@ public partial class AddViewModel : ObservableObject
         if (facet != null && !sphereFacets.Contains(facet))
         {
             sphereFacets.Add(facet);
-            OnPropertyChanged(nameof(isCreateButtonEnabled));
+            OnPropertyChanged(nameof(IsCreateButtonEnabled));
         }
     }
 
@@ -135,7 +133,7 @@ public partial class AddViewModel : ObservableObject
         if (facet != null && !sphereFacets.Contains(facet))
         {
             sphereFacets.Add(facet);
-            OnPropertyChanged(nameof(isCreateButtonEnabled));
+            OnPropertyChanged(nameof(IsCreateButtonEnabled));
         }
     }
 
@@ -144,7 +142,7 @@ public partial class AddViewModel : ObservableObject
         if (facet != null && sphereFacets.Contains(facet))
         {
             sphereFacets.Remove(facet);
-            OnPropertyChanged(nameof(isCreateButtonEnabled));
+            OnPropertyChanged(nameof(IsCreateButtonEnabled));
         }
     }
 
@@ -153,7 +151,7 @@ public partial class AddViewModel : ObservableObject
         if (facet != null && runningFacets.Contains(facet))
         {
             runningFacets.Remove(facet);
-            OnPropertyChanged(nameof(isCreateButtonEnabled));
+            OnPropertyChanged(nameof(IsCreateButtonEnabled));
         }
     }
 
@@ -163,7 +161,7 @@ public partial class AddViewModel : ObservableObject
         {
             runningFacets.Remove(facet);
             sphereFacets.Add(facet);
-            OnPropertyChanged(nameof(isCreateButtonEnabled));
+            OnPropertyChanged(nameof(IsCreateButtonEnabled));
         }
     }
 
@@ -173,7 +171,7 @@ public partial class AddViewModel : ObservableObject
         {
             sphereFacets.Remove(facet);
             runningFacets.Add(facet);
-            OnPropertyChanged(nameof(isCreateButtonEnabled));
+            OnPropertyChanged(nameof(IsCreateButtonEnabled));
         }
     }
 
@@ -194,9 +192,10 @@ public partial class AddViewModel : ObservableObject
 
             await Task.Run(() =>
             {
-                var process = Process.Start(processInfo);
-
-                if (process == null)
+                try
+                {
+                    var process = Process.Start(processInfo);
+                } catch
                 {
                     Debug.WriteLine("Failed to start Spheres_Collect process.");
                     return;

@@ -19,15 +19,22 @@
 
     <Grid>
         <StackPanel VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Spacing="20" MinWidth="350">
-            <ComboBox PlaceholderText="Type" ItemsSource="{Binding FacetTypeValues}" SelectedItem="{Binding type, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MinWidth="100" />
-            <Grid ColumnSpacing="10">
+            <ComboBox PlaceholderText="Type" ItemsSource="{Binding FacetTypeValues}" SelectedItem="{Binding Type, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" MinWidth="100" />
+            <Grid ColumnSpacing="10" RowSpacing="10">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                
-                <TextBox PlaceholderText="Content" Text="{Binding content, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Grid.Column="0" />
-                <Button Content="Choose" x:Name="ChooseButton" Click="ChooseButton_Click" Visibility="{Binding IsUrl, Converter={StaticResource BoolNegationConverter}}" Grid.Column="1" />
+
+                <TextBox PlaceholderText="Content" Text="{Binding Content, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Grid.Column="0" Grid.Row="0" />
+                <Button Content="Choose" x:Name="ChooseButton" Click="ChooseButton_Click" Visibility="{Binding IsUrl, Converter={StaticResource BoolNegationConverter}}" Grid.Column="1" Grid.Row="0" />
+                <TextBox PlaceholderText="Arguments" Text="{Binding Arguments, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Visibility="{Binding IsApp}" Grid.Column="0" Grid.Row="1" Grid.ColumnSpan="2" />
             </Grid>
         </StackPanel>
     </Grid>

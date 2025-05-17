@@ -1,8 +1,5 @@
 ﻿using System.Diagnostics;
 using System.Management;
-using System.Reflection.Emit;
-using System.Runtime.InteropServices;
-using System.Windows.Forms;
 using CommandLine;
 using Label = System.Windows.Forms.Label;
 
@@ -28,9 +25,6 @@ namespace Spheres_Collect
         }
         public class Options
         {
-            [Option('t', "timeout", Required = false, HelpText = "Set timeout for application to exit")]
-            public int Timeout { get; set; }
-
             [Option('k', "kill", Required = false, HelpText = "Kill application after exit timeout elapses")]
             public bool Kill { get; set; }
 
@@ -103,44 +97,46 @@ namespace Spheres_Collect
 
         private static void CloseProcess(Options opts, string tuple)
         {
+            string[] split = tuple.Split("*");
+
+            int pid = int.Parse(split[0]);
+            string executable = split[1].Trim('"');
+
+            Process? process = null;
+            bool hasExited = false;
+
             try
             {
-                string[] split = tuple.Split("*");
-
-                int pid = int.Parse(split[0]);
-                string executable = split[1].Trim('"');
-
-                Process process = Process.GetProcessById(pid);
-                bool hasExited = false;
-
-                if (opts.Kill)
-                {
-                    process.Kill();
-                    return;
-                }
-                else
-                {
-                    hasExited = process.CloseMainWindow();
-                }
-
-                if (!hasExited && process.Responding)
-                {
-                    SelectQuery selectQuery = new("Win32_Process");
-                    ManagementObjectSearcher searcher = new(selectQuery);
-                    foreach (ManagementObject p in searcher.Get())
-                    {
-                        if (p["ExecutablePath"] != null && p["ExecutablePath"].ToString() == executable)
-                        {
-                            Process rightProcess = Process.GetProcessById(Convert.ToInt32(p["ProcessId"]));
-                            KillProcessDialog(rightProcess);
-                            break;
-                        }
-                    }
-                }
+                process = Process.GetProcessById(pid);
             }
             catch (Exception e)
             {
-                Console.WriteLine($"Error: {e.Message}");
+                SelectQuery selectQuery = new("Win32_Process");
+                ManagementObjectSearcher searcher = new(selectQuery);
+                foreach (ManagementObject p in searcher.Get())
+                {
+                    if (p["ExecutablePath"] != null && p["ExecutablePath"].ToString() == executable)
+                    {
+                        Console.WriteLine($"Found process: {p["ProcessId"]}");
+                        process = Process.GetProcessById(Convert.ToInt32(p["ProcessId"]));
+                        break;
+                    }
+                }
+            }
+
+            if (process != null && opts.Kill)
+            {
+                process.Kill();
+                return;
+            }
+            else if (process != null)
+            {
+                hasExited = process.CloseMainWindow();
+            }
+            
+            if (!hasExited && process.Responding)
+            {
+                KillProcessDialog(process);
             }
         }
     }

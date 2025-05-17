@@ -38,10 +38,7 @@
                     <FontIcon Glyph="&#xECC8;" />
                 </NavigationViewItem.Icon>
             </NavigationViewItem>
-            <NavigationViewItem Content="Settings" Tag="Spheres.Views.SettingsPage" x:Name="SettingsPage">
-                <NavigationViewItem.Icon>
-                    <FontIcon Glyph="&#xE713;" />
-                </NavigationViewItem.Icon>
+            <NavigationViewItem Content="About" Tag="Spheres.Views.AboutPage" x:Name="AboutPage">
             </NavigationViewItem>
         </NavigationView.FooterMenuItems>
 

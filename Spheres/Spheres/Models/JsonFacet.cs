@@ -42,7 +42,7 @@ namespace Spheres.Models
         public JsonFacet(AddFacetViewModel viewModel)
         {
             Type = viewModel.Type;
-            Content = viewModel.Content;
+            Content = viewModel.Arguments != null ? viewModel.Content : $"{viewModel.Content} {viewModel.Arguments}";
         }
 
         public async Task<BitmapImage> GetIconAsync()
